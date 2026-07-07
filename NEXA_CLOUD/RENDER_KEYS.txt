@@ -1,0 +1,7 @@
+Here are the Environment Variables you need to add when deploying on Render.com:
+
+Key: DATABASE_URL
+Value: postgresql://postgres.jkggifhpgvveybiryttj:Aa%4053563136@aws-0-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1
+
+Key: DIRECT_URL
+Value: postgresql://postgres.jkggifhpgvveybiryttj:Aa%4053563136@aws-0-eu-west-1.pooler.supabase.com:5432/postgres

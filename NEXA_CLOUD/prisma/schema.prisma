@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      String   @default("Viewer") // Admin, Accountant, Viewer
+  createdAt DateTime @default(now())
+}
+
+model Customer {
+  id             String        @id @default(uuid())
+  customerNumber String        @unique
+  name           String
+  phone          String?
+  address        String?
+  openingBalance Float         @default(0)
+  currentBalance Float         @default(0)
+  creditLimit    Float         @default(0)
+  invoices       Invoice[]
+  payments       Payment[]
+  returns        Return[]
+  discounts      Discount[]
+  transactions   Transaction[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Invoice {
+  id               String        @id @default(uuid())
+  invoiceNumber    String        @unique
+  date             DateTime
+  customerId       String
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  amount           Float
+  memo             String?
+  lineItems        String?
+  remainingBalance Float
+  status           String        @default("Open") // Open, Partial, Closed
+  payments         Payment[]
+  returns          Return[]
+  discounts        Discount[]
+  transactions     Transaction[]
+  createdAt        DateTime      @default(now())
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  paymentNumber String        @unique
+  date          DateTime
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  invoiceId     String?
+  invoice       Invoice?      @relation(fields: [invoiceId], references: [id])
+  amount        Float
+  memo          String?
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+}
+
+model Return {
+  id           String        @id @default(uuid())
+  returnNumber String        @unique
+  date         DateTime
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  invoiceId    String?
+  invoice      Invoice?      @relation(fields: [invoiceId], references: [id])
+  amount       Float
+  memo         String?
+  lineItems    String?
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+model Discount {
+  id           String        @id @default(uuid())
+  date         DateTime
+  customerId   String
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  invoiceId    String?
+  invoice      Invoice?      @relation(fields: [invoiceId], references: [id])
+  amount       Float
+  memo         String?
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+}
+
+model Transaction {
+  id             String    @id @default(uuid())
+  date           DateTime
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  type           String    // Invoice, Payment, Return, Discount, Opening Balance
+  reference      String
+  description    String?
+  debit          Float     @default(0)
+  credit         Float     @default(0)
+  runningBalance Float     @default(0)
+  invoiceId      String?
+  invoice        Invoice?  @relation(fields: [invoiceId], references: [id])
+  paymentId      String?
+  payment        Payment?  @relation(fields: [paymentId], references: [id])
+  returnId       String?
+  return         Return?   @relation(fields: [returnId], references: [id])
+  discountId     String?
+  discount       Discount? @relation(fields: [discountId], references: [id])
+  createdAt      DateTime  @default(now())
+}
+
+model ImportLog {
+  id          String   @id @default(uuid())
+  date        DateTime @default(now())
+  type        String   // Customers, Invoices, Payments, Returns, Discounts
+  filename    String
+  status      String   // Success, Partial, Failed
+  imported    Int      @default(0)
+  skipped     Int      @default(0)
+  errors      String?
+  performedBy String?
+}
+
+model Employee {
+  id               String       @id @default(uuid())
+  employeeId       String       @unique
+  name             String
+  department       String?
+  position         String?
+  basicSalary      Float        @default(0)
+  expectedCheckIn  String?
+  expectedCheckOut String?
+  deviceUserId     String?      // Mapping to ZKTeco device user ID
+  linkedToId       String?
+  exemptFromAttendance Boolean  @default(false)
+  exemptFromLate   Boolean      @default(false)
+  linkedTo         Employee?    @relation("LinkedEmployees", fields: [linkedToId], references: [id])
+  linkedEmployees  Employee[]   @relation("LinkedEmployees")
+  attendances      Attendance[]
+  advances         AdvanceDeduction[]
+  createdAt        DateTime     @default(now())
+}
+
+model Attendance {
+  id         String   @id @default(uuid())
+  date       DateTime 
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     String   // Present, Absent, Late, Leave
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model AdvanceDeduction {
+  id          String   @id @default(uuid())
+  date        DateTime
+  type        String   // Advance, Deduction
+  amount      Float
+  reason      String?
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model BiometricDevice {
+  id        String   @id @default(uuid())
+  name      String
+  ipAddress String
+  port      Int      @default(4370)
+  status    String   @default("Active")
+  createdAt DateTime @default(now())
+}
+
+model SystemUser {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  password    String
+  role        String   @default("STAFF") // ADMIN or STAFF
+  permissions String?  // JSON string of allowed modules e.g. '["dashboard", "attendance"]'
+  createdAt   DateTime @default(now())
+}
